@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunicador LSC - SENA STEAM</title>
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons para los íconos -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .tab-active {
+            background-color: white;
+            color: #2563eb;
+            border-top: 4px solid #2563eb;
+        }
+
+        .hidden-tab {
+            display: none;
+        }
+
+        .sign-highlight {
+            border-color: #2563eb;
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+            transform: scale(1.05);
+        }
+
+        @keyframes pulse-blue {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        .active-sequence {
+            animation: pulse-blue 1s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Encabezado -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-800 mb-2">Comunicador LSC</h1>
+            <p class="text-slate-600 italic font-medium">SENA - Formación STEAM e Inclusión Social</p>
+        </header>
+
+        <!-- Contenedor Principal -->
+        <main class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+            
+            <!-- Navegación por Pestañas -->
+            <div class="flex border-b border-slate-200 bg-slate-100">
+                <button id="tab-hearing" onclick="switchTab('hearing')" class="flex-1 py-4 px-6 flex items-center justify-center gap-2 font-semibold transition-all tab-active">
+                    <i data-lucide="message-square"></i>
+                    <span>Oyente a Sordo</span>
+                </button>
+                <button id="tab-deaf" onclick="switchTab('deaf')" class="flex-1 py-4 px-6 flex items-center justify-center gap-2 font-semibold transition-all text-slate-500 hover:bg-slate-200">
+                    <i data-lucide="hand"></i>
+                    <span>Sordo a Oyente</span>
+                </button>
+            </div>
+
+            <div class="p-4 md:p-8">
+                <!-- SECCIÓN 1: OYENTE A PERSONA SORDA -->
+                <div id="content-hearing" class="space-y-8">
+                    <div class="bg-amber-50 p-4 rounded-lg flex gap-3 items-start border border-amber-100">
+                        <i data-lucide="info" class="text-amber-500 shrink-0 mt-1"></i>
+                        <p class="text-sm text-amber-800">
+                            <strong>Recomendación LSC:</strong> Escribe en <strong>infinitivo</strong>. Ejemplo: "YO IR TRABAJAR" en lugar de "Voy al trabajo".
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Escribe tu mensaje:</label>
+                            <div class="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    id="input-text-hearing"
+                                    placeholder="Escribe aquí..."
+                                    class="flex-1 border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm text-lg"
+                                >
+                                <button 
+                                    onclick="translateToSigns()"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md active:scale-95"
+                                >
+                                    <i data-lucide="play-circle"></i>
+                                    <span>Ver</span>
+                                </button>
+                                <button 
+                                    onclick="clearHearing()"
+                                    class="p-3 text-slate-400 hover:text-red-500 transition-colors"
+                                    title="Limpiar"
+                                >
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Control de Velocidad -->
+                        <div class="w-full md:w-48">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Velocidad:</label>
+                            <input type="range" id="speed-control" min="300" max="2000" value="800" step="100" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                            <div class="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold">
+                                <span>Rápido</span>
+                                <span>Lento</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualizador Central de Secuencia -->
+                    <div class="bg-slate-900 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[350px] relative overflow-hidden">
+                        <div id="sequence-viewer" class="text-center">
+                            <!-- Aquí se mostrará la seña actual -->
+                            <div id="current-sign-display" class="w-48 h-48 md:w-64 md:h-64 bg-white rounded-2xl flex items-center justify-center shadow-2xl mb-4 border-4 border-blue-500 transition-all">
+                                <i data-lucide="image" class="text-slate-200 w-24 h-24"></i>
+                            </div>
+                            <h2 id="current-letter-display" class="text-4xl font-black text-blue-400 tracking-widest">-</h2>
+                        </div>
+                        <div id="playback-indicator" class="absolute bottom-4 left-0 w-0 h-1 bg-blue-500 transition-all duration-300"></div>
+                    </div>
+
+                    <!-- Lista de Señas (Referencia) -->
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Referencia completa:</h3>
+                        <div id="sign-output-grid" class="flex flex-wrap gap-3 justify-center bg-slate-50 p-6 rounded-xl border border-slate-100 min-h-[100px]">
+                            <p class="text-slate-400 italic">Escribe para ver la dactilología completa...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: PERSONA SORDA A OYENTE -->
+                <div id="content-deaf" class="space-y-6 hidden-tab">
+                    <!-- Tablero de mensaje construido -->
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl min-h-[140px] flex flex-wrap gap-3 items-center relative group shadow-inner border-4 border-slate-800">
+                        <div id="deaf-message-display" class="flex flex-wrap gap-2 items-center">
+                            <span class="text-slate-600 text-xl font-medium">Toca botones para construir tu mensaje...</span>
+                        </div>
+                        <button 
+                            onclick="clearDeafMessage()"
+                            id="clear-deaf-btn"
+                            class="absolute right-6 top-6 text-slate-500 hover:text-white transition-colors hidden"
+                        >
+                            <i data-lucide="trash-2" class="w-8 h-8"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Panel de Vocabulario Básico -->
+                        <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-100">
+                            <h3 class="font-bold mb-4 flex items-center gap-2 text-emerald-800">
+                                <i data-lucide="message-circle"></i>
+                                Expresiones y Básicos
+                            </h3>
+                            <div id="basics-grid" class="grid grid-cols-2 gap-2">
+                                <!-- Se generarán con JS -->
+                            </div>
+                        </div>
+
+                        <!-- Panel de Verbos Infinitivos -->
+                        <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                            <h3 class="font-bold mb-4 flex items-center gap-2 text-blue-800">
+                                <i data-lucide="book"></i>
+                                Verbos (Infinitivo)
+                            </h3>
+                            <div id="verbs-grid" class="grid grid-cols-2 gap-2">
+                                <!-- Se generarán con JS -->
+                            </div>
+                        </div>
+
+                        <!-- Teclado Visual LSC -->
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold mb-4 flex items-center gap-2 text-slate-700">
+                                <i data-lucide="hand"></i>
+                                Abecedario A-Z
+                            </h3>
+                            <div id="alphabet-grid" class="grid grid-cols-4 gap-2 h-72 overflow-y-auto pr-2 custom-scrollbar">
+                                <!-- Se generarán con JS -->
+                            </div>
+                            <div class="mt-4">
+                                <button 
+                                    onclick="removeLastSign()"
+                                    class="w-full bg-orange-100 text-orange-700 border border-orange-200 rounded-xl py-3 font-bold hover:bg-orange-200 transition-colors shadow-sm active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    <i data-lucide="delete"></i>
+                                    BORRAR ÚLTIMO
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-8 text-center text-slate-400 text-sm border-t border-slate-200 pt-6">
+            <p class="font-bold text-slate-500">PROYECTO INCLUSIVO - SENA CALDAS</p>
+            <p class="mt-1">Diseñado para la formación STEAM y accesibilidad universal.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Inicializar íconos
+        lucide.createIcons();
+
+        // Configuración de datos
+        const IMAGE_PATH = "C:\\Users\\SENA\\Documents\\señas prueba\\abecedario\\senas\\";
+        const LSC_ALPHABET = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+        
+        // Vocabulario ampliado
+        const LSC_VERBS = [
+            "COMER", "IR", "QUERER", "TRABAJAR", "AYUDAR", "ESTUDIAR", 
+            "NECESITAR", "JUGAR", "VER", "ENTENDER", "APRENDER", 
+            "SABER", "PODER", "GUSTAR", "TENER", "VENIR"
+        ];
+        const LSC_BASICS = [
+            "HOLA", "GRACIAS", "POR FAVOR", "BUENOS DÍAS", "SÍ", "NO", 
+            "BIEN", "MAL", "PERDÓN", "NOMBRE", "¿CÓMO?", "¿QUÉ?", 
+            "AMIGO", "FAMILIA", "CASA", "SALUD"
+        ];
+
+        let currentDeafMessage = [];
+        let sequenceInterval = null;
+        let sequenceIndex = 0;
+
+        // Cambiar entre pestañas
+        function switchTab(tab) {
+            const hearingTab = document.getElementById('tab-hearing');
+            const deafTab = document.getElementById('tab-deaf');
+            const hearingContent = document.getElementById('content-hearing');
+            const deafContent = document.getElementById('content-deaf');
+
+            if (tab === 'hearing') {
+                hearingTab.classList.add('tab-active');
+                hearingTab.classList.remove('text-slate-500');
+                deafTab.classList.remove('tab-active');
+                deafTab.classList.add('text-slate-500');
+                hearingContent.classList.remove('hidden-tab');
+                deafContent.classList.add('hidden-tab');
+                stopSequence();
+            } else {
+                deafTab.classList.add('tab-active');
+                deafTab.classList.remove('text-slate-500');
+                hearingTab.classList.remove('tab-active');
+                hearingTab.classList.add('text-slate-500');
+                deafContent.classList.remove('hidden-tab');
+                hearingContent.classList.add('hidden-tab');
+                stopSequence();
+            }
+        }
+
+        // Lógica: Oyente a Sordo (Traducción y Secuencia)
+        function translateToSigns() {
+            const text = document.getElementById('input-text-hearing').value.toUpperCase();
+            const grid = document.getElementById('sign-output-grid');
+            grid.innerHTML = '';
+
+            if (text.trim() === '') {
+                stopSequence();
+                grid.innerHTML = '<p class="text-slate-400 italic">Escribe para ver la dactilología completa...</p>';
+                return;
+            }
+
+            // 1. Llenar la cuadrícula de referencia
+            const validChars = [];
+            for (let char of text) {
+                if (LSC_ALPHABET.includes(char) || char === ' ') {
+                    validChars.push(char);
+                    const container = document.createElement('div');
+                    container.id = `sign-ref-${validChars.length - 1}`;
+                    container.className = "flex flex-col items-center transition-all duration-300 p-1 rounded-lg border-2 border-transparent";
+
+                    if (LSC_ALPHABET.includes(char)) {
+                        container.innerHTML = `
+                            <div class="w-16 h-16 bg-white rounded shadow-sm border border-slate-200 flex items-center justify-center overflow-hidden">
+                                <img src="${IMAGE_PATH}${char}.png" alt="${char}" class="max-w-full max-h-full object-contain" 
+                                     onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=${char}';">
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-400 mt-1">${char}</span>
+                        `;
+                    } else {
+                        container.innerHTML = `<div class="w-6 h-16 flex items-center justify-center italic text-slate-300 text-[10px] font-bold">ESP</div>`;
+                    }
+                    grid.appendChild(container);
+                }
+            }
+
+            // 2. Iniciar Secuencia
+            startSequence(validChars);
+        }
+
+        function startSequence(chars) {
+            stopSequence();
+            if (chars.length === 0) return;
+
+            sequenceIndex = 0;
+            const display = document.getElementById('current-sign-display');
+            const letterDisplay = document.getElementById('current-letter-display');
+            const speed = parseInt(document.getElementById('speed-control').value);
+            const indicator = document.getElementById('playback-indicator');
+
+            sequenceInterval = setInterval(() => {
+                // Limpiar resaltado anterior
+                document.querySelectorAll('#sign-output-grid div').forEach(el => el.classList.remove('sign-highlight'));
+
+                const char = chars[sequenceIndex];
+                
+                // Actualizar Visualizador Central
+                if (LSC_ALPHABET.includes(char)) {
+                    display.innerHTML = `<img src="${IMAGE_PATH}${char}.png" class="max-w-full max-h-full object-contain active-sequence" onerror="this.src='https://via.placeholder.com/200?text=${char}';">`;
+                    letterDisplay.innerText = char;
+                    
+                    // Resaltar en la lista de referencia
+                    const ref = document.getElementById(`sign-ref-${sequenceIndex}`);
+                    if (ref) ref.classList.add('sign-highlight');
+                } else {
+                    display.innerHTML = `<div class="text-slate-300 font-bold text-2xl italic">ESPACIO</div>`;
+                    letterDisplay.innerText = "___";
+                }
+
+                // Indicador de progreso
+                const progress = ((sequenceIndex + 1) / chars.length) * 100;
+                indicator.style.width = `${progress}%`;
+
+                sequenceIndex++;
+                if (sequenceIndex >= chars.length) {
+                    sequenceIndex = 0; // Reiniciar bucle
+                }
+            }, speed);
+        }
+
+        function stopSequence() {
+            if (sequenceInterval) clearInterval(sequenceInterval);
+            document.getElementById('current-sign-display').innerHTML = `<i data-lucide="image" class="text-slate-200 w-24 h-24"></i>`;
+            document.getElementById('current-letter-display').innerText = "-";
+            document.getElementById('playback-indicator').style.width = "0%";
+            lucide.createIcons();
+        }
+
+        function clearHearing() {
+            document.getElementById('input-text-hearing').value = '';
+            translateToSigns();
+        }
+
+        // Lógica: Sordo a Oyente (Construcción de Mensaje)
+        function renderDeafPanel() {
+            const basicsGrid = document.getElementById('basics-grid');
+            const verbGrid = document.getElementById('verbs-grid');
+            const alphaGrid = document.getElementById('alphabet-grid');
+
+            // Render Básicos
+            LSC_BASICS.forEach(word => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white border-2 border-emerald-100 hover:border-emerald-500 hover:bg-emerald-50 py-3 rounded-xl font-bold transition-all text-xs shadow-sm active:scale-95 text-emerald-800";
+                btn.innerText = word;
+                btn.onclick = () => addToDeafMessage(word);
+                basicsGrid.appendChild(btn);
+            });
+
+            // Render Verbos
+            LSC_VERBS.forEach(verb => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white border-2 border-blue-100 hover:border-blue-500 hover:bg-blue-50 py-3 rounded-xl font-bold transition-all text-xs shadow-sm active:scale-95 text-blue-800";
+                btn.innerText = verb;
+                btn.onclick = () => addToDeafMessage(verb);
+                verbGrid.appendChild(btn);
+            });
+
+            // Render Alfabeto
+            LSC_ALPHABET.forEach(letter => {
+                const btn = document.createElement('button');
+                btn.className = "flex flex-col items-center bg-white border border-slate-200 hover:border-blue-500 hover:shadow-md rounded-xl p-2 transition-all active:scale-90";
+                btn.innerHTML = `
+                    <div class="w-full text-center text-[9px] text-slate-400 font-bold mb-1">${letter}</div>
+                    <img src="${IMAGE_PATH}${letter}.png" class="w-10 h-10 object-contain" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <span class="font-bold text-blue-600 hidden" style="display:none">${letter}</span>
+                `;
+                btn.onclick = () => addToDeafMessage(letter);
+                alphaGrid.appendChild(btn);
+            });
+        }
+
+        function addToDeafMessage(item) {
+            currentDeafMessage.push(item);
+            updateDeafMessageDisplay();
+        }
+
+        function removeLastSign() {
+            currentDeafMessage.pop();
+            updateDeafMessageDisplay();
+        }
+
+        function clearDeafMessage() {
+            currentDeafMessage = [];
+            updateDeafMessageDisplay();
+        }
+
+        function updateDeafMessageDisplay() {
+            const display = document.getElementById('deaf-message-display');
+            const clearBtn = document.getElementById('clear-deaf-btn');
+            display.innerHTML = '';
+
+            if (currentDeafMessage.length === 0) {
+                display.innerHTML = '<span class="text-slate-600 text-lg font-medium">Toca botones para construir tu mensaje...</span>';
+                clearBtn.classList.add('hidden');
+            } else {
+                currentDeafMessage.forEach(msg => {
+                    const span = document.createElement('span');
+                    span.className = "bg-blue-600 px-4 py-2 rounded-lg text-xl md:text-2xl font-bold shadow-lg border-b-4 border-blue-800";
+                    span.innerText = msg;
+                    display.appendChild(span);
+                });
+                clearBtn.classList.remove('hidden');
+            }
+        }
+
+        // Escuchar cambios en el input
+        document.getElementById('input-text-hearing').addEventListener('input', translateToSigns);
+
+        // Inicializar panel al cargar
+        window.onload = renderDeafPanel;
+    </script>
+</body>
+</html>
